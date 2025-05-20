@@ -1,0 +1,4 @@
+logging:
+  file: "watering.log"
+
+gpio: {pin: 17}

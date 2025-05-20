@@ -1,0 +1,10 @@
+schedule:
+  - weekday: "mon"
+    time: "07:00"
+    duration: 120
+  - weekday: "fri"
+    time: "19:00"
+    duration: 180
+  - weekday: "tue"
+    time: "12:15"
+    duration: 60

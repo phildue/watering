@@ -1,0 +1,11 @@
+name: watering
+channels:
+  - free
+  - defaults
+dependencies:
+  - python=3.6.8
+  - flask
+  - pyyaml
+  - pip
+  - pip:
+    - git+https://github.com/KevynKelso/Mock.GPIO.git
