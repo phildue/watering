@@ -3,8 +3,8 @@
 SERVICE_NAME="watering"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPT_PATH="${SCRIPT_DIR}/controller.py"
-PYTHON_PATH="$(which python3)"
+SCRIPT_PATH="${SCRIPT_DIR}/watering.py"
+PYTHON_PATH="/home/$(whoami)/miniforge3/bin/python"
 USER_NAME="$(whoami)"
 
 echo "Creating systemd service file at ${SERVICE_FILE}..."
@@ -18,7 +18,7 @@ After=network.target
 Type=simple
 User=${USER_NAME}
 WorkingDirectory=${SCRIPT_DIR}
-ExecStart=${PYTHON_PATH} ${SCRIPT_PATH}
+ExecStart=bash -c 'source /home/${USER_NAME}/miniforge3/bin/activate watering && ${PYTHON_PATH} ${SCRIPT_PATH}'
 Restart=on-failure
 
 [Install]
