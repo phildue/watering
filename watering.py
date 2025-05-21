@@ -26,7 +26,7 @@ def run_scheduler(pump: Pump):
             task_time = task['time']
             task_id = f"{task_day}-{task_time}"
 
-            if task_day == current_day and task_time == current_time:
+            if task_day == current_day or task_day == 'all' and task_time == current_time:
                 if task_id not in already_triggered:
                     duration = task['duration']
                     threading.Thread(

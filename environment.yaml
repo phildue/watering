@@ -6,4 +6,5 @@ dependencies:
   - pyyaml
   - pip
   - pip:
+    - RPI.GPIO
     - git+https://github.com/KevynKelso/Mock.GPIO.git
