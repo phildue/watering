@@ -7,7 +7,7 @@ from typing import Optional
 import paho.mqtt.client as mqtt
 
 
-class MqttIntegration:
+class MqttServer:
     def __init__(
         self,
         host: str,
@@ -36,9 +36,12 @@ class MqttIntegration:
         self._lock = threading.Lock()
 
         self.command_topic = f"{self.base_topic}/pump/command"
-        self.state_topic = f"{self.base_topic}/pump/state"
         self.availability_topic = f"{self.base_topic}/availability"
         self.last_run_topic = f"{self.base_topic}/last_run"
+        self.duration_command_topic = f"{self.base_topic}/duration/set"
+        self.duration_state_topic = f"{self.base_topic}/duration"
+        
+        self._current_duration = default_duration
 
     @classmethod
     def from_settings(cls, settings, pump):
@@ -72,6 +75,9 @@ class MqttIntegration:
         logging.info("Connecting to MQTT broker %s:%s", self.host, self.port)
         self._client.connect(self.host, self.port, keepalive=60)
         self._client.loop_start()
+        
+        # Publish initial duration
+        self._client.publish(self.duration_state_topic, str(self._current_duration), retain=True)
 
     def stop(self):
         if not self._client:
@@ -83,7 +89,6 @@ class MqttIntegration:
     def state_callback(self, state: str):
         if not self._client:
             return
-        self._client.publish(self.state_topic, state, retain=True)
         if state == "ON":
             self._client.publish(
                 self.last_run_topic,
@@ -97,7 +102,9 @@ class MqttIntegration:
             return
         logging.info("MQTT connected.")
         client.subscribe(self.command_topic)
+        client.subscribe(self.duration_command_topic)
         client.publish(self.availability_topic, "online", retain=True)
+        client.publish(self.duration_state_topic, str(self._current_duration), retain=True)
 
         if self.discovery:
             self._publish_discovery_config(client)
@@ -110,10 +117,24 @@ class MqttIntegration:
 
     def _on_message(self, client, userdata, msg):
         payload = msg.payload.decode("utf-8").strip()
-        duration = self._parse_duration(payload)
-        if duration is None:
-            logging.warning("MQTT command ignored: %s", payload)
+        
+        # Handle duration setting
+        if msg.topic == self.duration_command_topic:
+            try:
+                new_duration = int(payload)
+                if 1 <= new_duration <= 60:  # 1 second to 1 minute max
+                    self._current_duration = new_duration
+                    client.publish(self.duration_state_topic, str(new_duration), retain=True)
+                    logging.info("Duration set to %s seconds", new_duration)
+                else:
+                    logging.warning("Duration out of range (1-60): %s", new_duration)
+            except ValueError:
+                logging.warning("Invalid duration value: %s", payload)
             return
+        
+        # Handle pump button press - use current duration
+        duration = self._current_duration
+        logging.info("Running pump for %s seconds", duration)
 
         with self._lock:
             threading.Thread(
@@ -128,9 +149,6 @@ class MqttIntegration:
 
         if payload.upper() == "ON":
             return self.default_duration
-
-        if payload.upper() == "OFF":
-            return None
 
         try:
             value = int(payload)
@@ -157,22 +175,43 @@ class MqttIntegration:
         return None
 
     def _publish_discovery_config(self, client):
-        object_id = "watering_pump"
-        config_topic = f"{self.discovery_prefix}/switch/{object_id}/config"
         device = {
             "identifiers": ["watering_controller"],
             "name": "Watering Controller",
             "manufacturer": "Custom",
             "model": "GPIO Pump",
         }
-        payload = {
-            "name": "Watering Pump",
-            "unique_id": "watering_pump_switch",
+        
+        # Remove old switch config (if it exists from previous version)
+        old_switch_config_topic = f"{self.discovery_prefix}/switch/watering_pump/config"
+        client.publish(old_switch_config_topic, "", retain=True)
+        
+        # Publish button config
+        button_config_topic = f"{self.discovery_prefix}/button/watering_pump/config"
+        button_payload = {
+            "name": "Run Pump",
+            "unique_id": "watering_pump_button",
             "command_topic": self.command_topic,
-            "state_topic": self.state_topic,
             "availability_topic": self.availability_topic,
-            "payload_on": "ON",
-            "payload_off": "OFF",
+            "payload_press": "PRESS",
             "device": device,
         }
-        client.publish(config_topic, json.dumps(payload), retain=True)
+        client.publish(button_config_topic, json.dumps(button_payload), retain=True)
+        
+        # Publish duration number config
+        duration_config_topic = f"{self.discovery_prefix}/number/watering_duration/config"
+        duration_payload = {
+            "name": "Duration",
+            "unique_id": "watering_duration_number",
+            "command_topic": self.duration_command_topic,
+            "state_topic": self.duration_state_topic,
+            "availability_topic": self.availability_topic,
+            "unit_of_measurement": "s",
+            "min": 1,
+            "max": 60,
+            "step": 1,
+            "mode": "box",
+            "icon": "mdi:timer",
+            "device": device,
+        }
+        client.publish(duration_config_topic, json.dumps(duration_payload), retain=True)

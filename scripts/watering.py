@@ -4,7 +4,7 @@ import time
 import logging
 from pump import Pump
 from utils import load_yaml, setup_logging
-from mqtt_integration import MqttIntegration
+from mqtt_server import MqttServer
 
 
 if __name__ == "__main__":
@@ -13,10 +13,10 @@ if __name__ == "__main__":
     
     try:
         pump = Pump(pin=settings["pump"]["pin"])
-        mqtt_integration = MqttIntegration.from_settings(settings, pump)
+        mqtt_server = MqttServer.from_settings(settings, pump)
         
-        if mqtt_integration:
-            mqtt_integration.start()
+        if mqtt_server:
+            mqtt_server.start()
             logging.info("MQTT integration started. Waiting for commands...")
             
             # Keep the process running
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logging.info("Shutting down...")
     finally:
-        if "mqtt_integration" in locals() and mqtt_integration:
-            mqtt_integration.stop()
+        if "mqtt_server" in locals() and mqtt_server:
+            mqtt_server.stop()
         logging.info("Program ended.")
         
