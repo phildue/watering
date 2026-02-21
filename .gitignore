@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+watering.log
+
+# Virtual Environments
+venv/
+env/
+ENV/
+miniforge3/
+.conda/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Docker
+*.tar
+docker-compose.override.yml
+
+# Large installers
+Miniforge3*.sh
+*.tar.gz
+*.zip
+
+# Local settings (if you want to gitignore custom configs)
+configs/settings.local.yaml

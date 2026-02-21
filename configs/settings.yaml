@@ -1,0 +1,17 @@
+logging:
+  file: "watering.log"
+
+pump:
+  pin: 17
+  default_duration: 10
+
+mqtt:
+  enabled: true
+  host: "mosquitto"
+  port: 1883
+  username: null
+  password: null
+  base_topic: "watering"
+  client_id: "watering-controller"
+  discovery: true
+  discovery_prefix: "homeassistant"

@@ -1,6 +1,29 @@
 import logging
 import time
-import RPi.GPIO as GPIO
+
+try:
+    import RPi.GPIO as GPIO
+except Exception:
+    class _FakeGPIO:
+        BCM = "BCM"
+        OUT = "OUT"
+        HIGH = 1
+        LOW = 0
+
+        def setmode(self, mode):
+            logging.warning("FakeGPIO setmode(%s)", mode)
+
+        def setup(self, pin, mode):
+            logging.warning("FakeGPIO setup(pin=%s, mode=%s)", pin, mode)
+
+        def output(self, pin, value):
+            logging.warning("FakeGPIO output(pin=%s, value=%s)", pin, value)
+
+        def cleanup(self):
+            logging.warning("FakeGPIO cleanup")
+
+    GPIO = _FakeGPIO()
+    logging.warning("Using FakeGPIO; GPIO not available on this device.")
     
 class Pump:
     def __init__(self, pin):
@@ -11,13 +34,17 @@ class Pump:
         GPIO.output(self.pin, GPIO.HIGH)
         logging.info(f"Pump initialized on pin [{self.pin}].")
 
-    def activate(self, duration):
+    def activate(self, duration, on_state_change=None):
         try:
             logging.info(f"Pump ON for {duration} seconds..")
+            if on_state_change:
+                on_state_change("ON")
             GPIO.output(self.pin, GPIO.LOW)
             time.sleep(duration)
             GPIO.output(self.pin, GPIO.HIGH)
             logging.info("Pump OFF")
+            if on_state_change:
+                on_state_change("OFF")
         except Exception as e:
             logging.error("Pump Error: " + str(e))
     

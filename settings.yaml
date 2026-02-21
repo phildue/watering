@@ -1,5 +1,0 @@
-logging:
-  file: "watering.log"
-
-pump:
-  pin: 17

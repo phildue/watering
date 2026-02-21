@@ -1,4 +1,0 @@
-schedule:
-  - weekday: "all"
-    time: "18.11"
-    duration: 30

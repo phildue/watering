@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: watering-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./configs/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+  watering:
+    build: .
+    container_name: watering-controller
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./configs/settings.yaml:/app/configs/settings.yaml:ro
+    privileged: true
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+    environment:
+      - TZ=UTC
+
+volumes:
+  mosquitto-data:
